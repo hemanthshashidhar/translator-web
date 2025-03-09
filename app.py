@@ -1,6 +1,7 @@
 import os
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, send_file
 from deep_translator import GoogleTranslator
+from gtts import gTTS
 
 app = Flask(__name__)
 
@@ -41,8 +42,20 @@ def translate():
         return jsonify({"error": "No text provided"}), 400
 
     try:
+        # Translate the text
         translated_text = GoogleTranslator(source='auto', target=target_lang).translate(text)
-        return jsonify({"translated_text": translated_text})
+
+        # Generate speech using gTTS
+        tts = gTTS(text=translated_text, lang=target_lang)
+        audio_path = "static/output.mp3"
+        
+        # Remove previous file to save memory
+        if os.path.exists(audio_path):
+            os.remove(audio_path)
+
+        tts.save(audio_path)
+
+        return jsonify({"translated_text": translated_text, "audio_url": audio_path})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
